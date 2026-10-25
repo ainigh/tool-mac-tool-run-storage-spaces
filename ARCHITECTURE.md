@@ -4,8 +4,8 @@ Four apps on one Mac, each with one job:
 
 | App | Repository | Port | Its job |
 |---|---|---|---|
-| **Super Face** | [JUST-super-mac-tts-ONLY-service](https://github.com/ainigh/JUST-super-mac-tts-ONLY-service) | 8769 | The face and the conversation. It asks Peter. |
-| **Peter** | [tool-mac-tool-run-agent](https://github.com/ainigh/tool-mac-tool-run-agent) | 8770 | Reads requests in plain words and carries them out. Keeps the time. Lets apps into the storage. |
+| **Super Face** | [JUST-super-mac-tts-ONLY-service](https://github.com/ainigh/JUST-super-mac-tts-ONLY-service) | 8769 | The face and the conversation. It asks Peter. Reads its own notes here. |
+| **Peter** | [tool-mac-tool-run-agent](https://github.com/ainigh/tool-mac-tool-run-agent) | 8770 | His model reads requests in plain words and carries them out. Keeps the time. Writes what's learned. Lets apps into the storage. |
 | **Tool Mac Tool Run** | [tool-mac-tool-run](https://github.com/ainigh/tool-mac-tool-run) | 8768 | The hands: scripts, flows, the web, Chrome. A run waits for Run on the Mac. |
 | **Storage Spaces** | [tool-mac-tool-run-storage-spaces](https://github.com/ainigh/tool-mac-tool-run-storage-spaces) | 8771 | What's kept: the person's library, MEMORY and mind; Super Face's prompt and memory; Peter's schedule and status; what's waiting for approval. |
 
@@ -15,7 +15,7 @@ flowchart LR
     P -- "runs (a click on the Mac)" --> T["Tool Mac Tool Run :8768"]
     P -- "reads and writes every space;<br/>says yes or no to the others" --> S["Storage Spaces :8771"]
     T -- "the library, MEMORY, the mind<br/>(its tools, for Peter and its boards)" --> S
-    SF -. "its own space: SUPER<br/>(its prompt, its playbook)" .-> S
+    SF -. "reads its own space: SUPER<br/>(its instructions, its playbook)" .-> S
     O["any other app"] -. "its own space, OTHER/…;<br/>asks for the rest" .-> S
 ```
 
@@ -41,7 +41,7 @@ What was asked (this repository's first README), its words lightly tidied:
 | What Peter needs "to work" | **SCHEDULE** (his schedule), **STATUS** (how things stand), **FOLLOWING** (the runs he's following: today they're only in memory, so a restart loses the callback; kept here they outlast it), **SETTINGS** (his model, where Tool Mac Tool Run is). Records, because his things are JSON and two of his threads may write the same one: the version stops one overwriting the other unseen. |
 | What "pending" holds | What's waiting for a yes or a no: **REQUESTS** (an app asking for access) and **WRITES** (a change held until it's approved, `"hold": true`), kept as records so they outlast a restart, decided only through `/api/access/requests` and `/api/pending`. |
 | What "other" is | Any other app's own folder of notes, made the first time it writes (`other/super-voice`). Nothing uses it yet; it's there so a new app needn't be given someone else's space. |
-| What Super Face's "prompt" and "memory" hold | The two notes it kept in Tool Mac Tool Run's library: **PROMPT/instructions** ("Super Face instructions": the person's standing instructions) and **MEMORY/playbook** ("Super Face playbook": what it has learned), with the same first lines. The import copies them there and leaves them in USER/LIBRARY too, since Super Face still reads them there (through Peter) until it's changed. What it knows about the person stays in USER/MEMORY (the node "the user"), as before. |
+| What Super Face's "prompt" and "memory" hold | The two notes it kept in Tool Mac Tool Run's library: **PROMPT/instructions** ("Super Face instructions": the person's standing instructions) and **MEMORY/playbook** ("Super Face playbook": what it has learned), with the same first lines. The import copies them there and leaves them in USER/LIBRARY too. Super Face reads them here now; the copies in USER/LIBRARY are no longer read. What it knows about the person stays in USER/MEMORY (the node "the user"), as before. |
 | How "Peter can allow access" works without being a password | Rules, then grants. Peter may read and write everything; an app its own space; the rest it asks for, and Peter (or the person, or a space's owner for its own) says yes: read or write, a space or one store, for a while or for good. Every grant is listed in the window and can be taken back. |
 | An app claiming to be Peter | An app can claim its name with a key (`POST /api/clients/register`); from then on, a request in that name without the key is turned down. The person can forget a key (so a reinstalled app can register again). Only its hash is kept. |
 | Tool Mac Tool Run losing its own storage | It's given a grant from the start: it may read and write USER (the library, MEMORY and the mind were its own), so it can keep its boards and tools working through the same API, on another port. |
@@ -70,5 +70,10 @@ What was asked (this repository's first README), its words lightly tidied:
    access", "allow request 3", "let Super Face read my memory", "stop letting Super Voice in";
    only the person (in his window) says yes through him, so no app can let itself in by asking
    him.
-3. **Super Face** (not yet): its two notes come from SUPER (PROMPT/instructions, MEMORY/playbook), in its
-   own space, without asking; what it knows of the person, through Peter, as now.
+3. **Super Face** (done): its two notes come from SUPER (PROMPT/instructions, MEMORY/playbook), in
+   its own space, read straight from here at the start of every request (`GET
+   /api/spaces/super/{prompt,memory}/files/{name}?format=text`, as `Super Face`), without Peter or a
+   model. Writing them is Peter's: its model asks him to keep something, word for word, and he
+   writes it (his tool `space_notes`). What it knows of the person is MEMORY's, in USER: its model
+   asks Peter when it needs it, rather than every request. Why, and what else was decided with it:
+   [Peter's DECISIONS.md](https://github.com/ainigh/tool-mac-tool-run-agent/blob/main/DECISIONS.md).
