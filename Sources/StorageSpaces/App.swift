@@ -122,7 +122,6 @@ final class StorageModel: ObservableObject {
 
     func start() {
         let api = self.api
-        let firstLaunch = !storage.exists
         Task {
             do {
                 try await api.start()
@@ -132,15 +131,16 @@ final class StorageModel: ObservableObject {
             await api.setOnChange {
                 Task { @MainActor in StorageModel.shared.refreshSoon() }
             }
-            // The first time, what Tool Mac Tool Run and Peter kept comes in (not after a factory reset).
+            // Once, what Tool Mac Tool Run and Peter kept comes in (not after a factory reset).
             let reset = UserDefaults.standard.bool(forKey: "didFactoryReset")
-            if firstLaunch, !reset, !ToolMacImport.done(in: storage), ToolMacImport.available() {
+            if !reset, !ToolMacImport.done(in: storage), ToolMacImport.available() {
                 let r = await api.asPerson("POST", "/api/import")
                 let summary = r.json["summary"] as? String ?? "Brought in what Tool Mac Tool Run kept."
                 message = summary
                 Notifier.post(title: "Storage Spaces is ready", body: summary + " Tool Mac Tool Run's own are left as they were.")
             }
             await refresh()
+            await api.watch()
             server.start(port: StorageAPI.port, network: false)
         }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in

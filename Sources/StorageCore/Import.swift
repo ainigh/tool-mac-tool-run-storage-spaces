@@ -4,9 +4,10 @@ import Foundation
 /// stay where they are, as they were: Tool Mac Tool Run goes on using its own until it's changed
 /// to use Storage Spaces):
 ///
-/// - TOOL-MAC-RUN/LIBRARY → USER/LIBRARY, but for Super Face's two notes, which go to its own
-///   space ("Super Face instructions" → SUPER/PROMPT/instructions, "Super Face playbook" →
-///   SUPER/MEMORY/playbook);
+/// - TOOL-MAC-RUN/LIBRARY → USER/LIBRARY; Super Face's two notes go to its own space too
+///   ("Super Face instructions" → SUPER/PROMPT/instructions, "Super Face playbook" →
+///   SUPER/MEMORY/playbook), and stay in the library as well while Super Face still reads them
+///   there (through Peter and Tool Mac Tool Run);
 /// - TOOL-MAC-RUN/MEMORY → USER/MEMORY (one of its files left as it came is replaced; one
 ///   written in comes in beside it, as "NAME (from Tool Mac Tool Run)");
 /// - TOOL-MAC-RUN/MIND → USER/MIND, when the mind here has nothing in it yet (two minds aren't
@@ -75,7 +76,6 @@ public enum ToolMacImport {
                     let seed = isInstructions ? SuperFace.instructionsHead : SuperFace.playbookHead
                     let text = (try? theirLibrary.read(note.name).text) ?? ""
                     try bring(text, as: dest.note, into: lib, replacingIf: { $0 == seed }, label: "SUPER/\(dest.store.uppercased())", &report)
-                    continue
                 }
                 let text = (try? theirLibrary.read(note.name).text) ?? ""
                 try bring(text, as: note.name, into: mine, replacingIf: { _ in false }, label: "USER/LIBRARY", &report)

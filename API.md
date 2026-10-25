@@ -184,7 +184,9 @@ if there's none yet.
 `?after=N` (the last `seq` you saw; 0 the first time), `&wait=25` (seconds to wait when there's
 nothing yet; at most 60), `&space=`, `&store=`. Gives `changes`: `[{seq, space, store, path, op,
 name, client, at}]`, the oldest first, only for what you may read (and your own requests in
-PENDING), and `next`: the call to make next. The latest thousand are kept while the app runs:
+PENDING), and `next`: the call to make next. A change made to the files themselves (by Tool
+Mac Tool Run's boards and flows, which read and write the person's space as files, or by hand) is
+one too, a couple of seconds on: `op` is `edited`, `added` or `removed`, and `client` is `on disk`. The latest thousand are kept while the app runs:
 `oldest` says how far back that is.
 
 ## The rest

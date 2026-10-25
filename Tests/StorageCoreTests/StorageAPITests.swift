@@ -307,7 +307,7 @@ final class StorageAPITests: XCTestCase {
         let lib = storage.notes(storage.spec(.user, "library")!)
         XCTAssertEqual(try lib.read("groceries").text, "- milk\n")
         XCTAssertEqual(try lib.read("groceries (from Tool Mac Tool Run)").text, "- eggs\n")
-        XCTAssertFalse(lib.exists("Super Face instructions"), "Super Face's go to its own space")
+        XCTAssertTrue(lib.exists("Super Face instructions"), "Super Face's stay in the library too, while it reads them there")
         XCTAssertTrue(try storage.notes(storage.spec(.super, "prompt")!).read("instructions").text.contains("call me Sam"))
         XCTAssertTrue(try storage.notes(storage.spec(.super, "memory")!).read("playbook").text.contains("weather.py"))
         XCTAssertTrue(try storage.userMemory.files.read("PEOPLE").text.contains("Ada: met at the conference"))
@@ -357,6 +357,25 @@ final class StorageAPITests: XCTestCase {
         let (_, mine, _) = await send("GET", "/api/changes?after=0&wait=5")
         XCTAssertEqual((mine["changes"] as? [[String: Any]])?.first?["name"] as? String, "now")
         XCTAssertLessThan(Date().timeIntervalSince(started), 9)
+    }
+
+    func testEditsOnDiskAreChangesToo() async throws {
+        let api = self.api!
+        _ = await api.checkDisk()
+        var n = await api.checkDisk()
+        XCTAssertEqual(n, 0, "the first look only learns what's there")
+        // Through the API: told once, not again by the watch.
+        await send("PUT", "/api/library/files/groceries", ["text": "- eggs"])
+        n = await api.checkDisk()
+        XCTAssertEqual(n, 0)
+        // As Tool Mac Tool Run's boards (or the person) do: the files themselves.
+        try "- milk".write(to: storage.root.appendingPathComponent("USER/LIBRARY/groceries.md"), atomically: true, encoding: .utf8)
+        try "# new".write(to: storage.root.appendingPathComponent("SUPER/PROMPT/tone.md"), atomically: true, encoding: .utf8)
+        n = await api.checkDisk()
+        XCTAssertEqual(n, 2)
+        let (_, j, _) = await send("GET", "/api/changes?after=1")
+        let seen = (j["changes"] as? [[String: Any]] ?? []).map { "\($0["path"] ?? "") \($0["op"] ?? "") \($0["name"] ?? "") \($0["client"] ?? "")" }
+        XCTAssertEqual(Set(seen), ["user/library edited groceries on disk", "super/prompt added tone on disk"])
     }
 
     func testTheSmallThings() throws {

@@ -17,6 +17,9 @@ public actor StorageAPI {
     public let changes = Changes()
     public let log = OperationLog()
     var book: AccessBook
+    /// What each store's folder held when it was last looked at (`checkDisk`).
+    var seen: [String: [String: String]] = [:]
+    var watcher: Task<Void, Never>?
     var importSource = ToolMacImport.defaultSource
     var importPeter = ToolMacImport.defaultPeter
     /// Called after anything is changed by a request (the app's window shows it).
@@ -680,7 +683,63 @@ public actor StorageAPI {
 
     func changed(_ space: SpaceID, _ store: String?, op: String, name: String?, _ client: String) async {
         await changes.add(space, store, op: op, name: name, client: client)
+        // What's on disk now is known: the watch doesn't tell of it again.
+        for spec in storage.stores(in: space) where store == nil || spec.name == store || spec.kind == .mind || spec.kind == .memory {
+            seen[spec.path] = Self.fingerprint(storage.folder(spec))
+        }
         onChange?()
+    }
+
+    // MARK: watching the folders
+
+    /// What's in a store's folder: each file's name, size and when it changed.
+    static func fingerprint(_ folder: URL) -> [String: String] {
+        let fm = FileManager.default
+        var out: [String: String] = [:]
+        for name in (try? fm.contentsOfDirectory(atPath: folder.path)) ?? [] where !name.hasPrefix(".") {
+            let a = try? fm.attributesOfItem(atPath: folder.appendingPathComponent(name).path)
+            guard (a?[.type] as? FileAttributeType) == .typeRegular else { continue }
+            out[name] = "\((a?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)/\((a?[.size] as? NSNumber)?.intValue ?? 0)"
+        }
+        return out
+    }
+
+    /// Looks at every store's folder for what changed there without the API (Tool Mac Tool Run's
+    /// boards and flows, which write the person's space as files; the person, by hand): each
+    /// changed file is a change ("edited", "added" or "removed", by "on disk"). The first look
+    /// only learns what's there. Returns how many changes it found.
+    @discardableResult
+    public func checkDisk() async -> Int {
+        var found = 0
+        for spec in storage.allStores {
+            let now = Self.fingerprint(storage.folder(spec))
+            defer { seen[spec.path] = now }
+            guard let before = seen[spec.path], before != now else { continue }
+            let names = Set(before.keys).union(now.keys).filter { before[$0] != now[$0] }.sorted()
+            for file in names.prefix(20) {
+                let op = before[file] == nil ? "added" : now[file] == nil ? "removed" : "edited"
+                let name = file.hasSuffix(".md") || file.hasSuffix(".json") ? String(file[..<file.lastIndex(of: ".")!]) : file
+                await changes.add(spec.space, spec.name, op: op, name: name, client: Self.onDisk)
+                found += 1
+            }
+        }
+        if found > 0 { onChange?() }
+        return found
+    }
+
+    /// Who a change made on disk is said to be by.
+    public static let onDisk = "on disk"
+
+    /// Looks at the folders every `seconds`, while the app runs.
+    public func watch(every seconds: Double = 2) {
+        guard watcher == nil else { return }
+        watcher = Task {
+            await self.checkDisk()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                await self.checkDisk()
+            }
+        }
     }
 
     func changesRoute(_ fields: [String: Any], _ caller: Caller) async -> HTTPResponse {
