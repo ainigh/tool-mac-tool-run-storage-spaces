@@ -60,11 +60,15 @@ What was asked (this repository's first README), its words lightly tidied:
    each one in the change feed. Its first launch moves LIBRARY, MEMORY and MIND over from
    TOOL-MAC-RUN whole, once. TOOL-MAC-RUN keeps SYSTEM-DOCS; its factory reset leaves the
    storage alone.
-2. **Peter** (next): his schedule, status, the runs he's following and his settings move to PETER's
-   records (he registers his name with a key on his first launch, and keeps it in his
-   Application Support). He watches `GET /api/changes?space=pending&wait=25` and answers requests
-   for access (his model, or his rules: "Super Face may read MEMORY", asking the person when
-   unsure). His templates gain the storage's own ("remember that…", "what do we know about…",
-   "read the note…") straight from here, not through Tool Mac Tool Run.
+2. **Peter** (done): he claims his name with a key on his first launch (kept in his Application
+   Support), and keeps his schedule, his model's settings (never its key), the runs he's
+   following and how things stand in PETER's records (SCHEDULE/schedule, SETTINGS/model,
+   FOLLOWING/runs, STATUS/now), written when they change; as he opens, whichever is newer, his
+   own files or these, is taken. The person's notes, MEMORY and the mind ("read the note…",
+   "remember…", "what do you know about…") come straight from here, and through Tool Mac Tool
+   Run only while Storage Spaces is closed. He answers for access in words: "who's asking for
+   access", "allow request 3", "let Super Face read my memory", "stop letting Super Voice in";
+   only the person (in his window) says yes through him, so no app can let itself in by asking
+   him.
 3. **Super Face** (not yet): its two notes come from SUPER (PROMPT/instructions, MEMORY/playbook), in its
    own space, without asking; what it knows of the person, through Peter, as now.
